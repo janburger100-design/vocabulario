@@ -2,7 +2,7 @@
 # Baut die App und schreibt eine neue Cache-Version in sw.js
 set -e
 cd "$(dirname "$0")"
-npx esbuild src/app.js --bundle --format=esm --minify --target=safari15 --outfile=docs/app.js
+./node_modules/.bin/esbuild src/app.js --bundle --format=esm --minify --target=safari15 --outfile=docs/app.js
 VER=$(cat docs/app.js docs/app.css docs/index.html docs/config.js | sha1sum | cut -c1-10)
 FILES=$(cd docs && find . -type f ! -name sw.js ! -name '.*' | sed 's|^\./||' | sort | awk '{printf "\"%s\",", $0}')
 cat > docs/sw.js <<SW

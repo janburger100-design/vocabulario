@@ -6,4 +6,4 @@ Spanisch-Karteikarten als installierbare Web-App (PWA). Läuft offline, gleicht 
 - `src/` – Quellcode, `src/vocab.json` enthält die Vokabeln
 - `docs/config.js` – Firebase-Zugangsdaten (leer = nur lokal)
 - `firestore.rules` – Sicherheitsregeln: jeder liest und schreibt nur seine eigenen Daten
-- `./build.sh` – baut `docs/app.js` und aktualisiert den Offline-Cache
+- `npm install`, dann `./build.sh` – baut `docs/app.js` und aktualisiert den Offline-Cache

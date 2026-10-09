@@ -1,5 +1,5 @@
 // Offline-Cache. Version wird bei jedem Build neu berechnet.
-const CACHE = "vocabulario-c60b31361c";
+const CACHE = "vocabulario-d5b023e2bf";
 const FILES = ["./", "app.css","app.js","config.js","fonts/fraunces-latin-600-italic.woff2","fonts/fraunces-latin-600-normal.woff2","fonts/manrope-latin-400-normal.woff2","fonts/manrope-latin-500-normal.woff2","fonts/manrope-latin-600-normal.woff2","fonts/manrope-latin-700-normal.woff2","fonts/manrope-latin-800-normal.woff2","icons/apple-touch-icon.png","icons/icon-192.png","icons/icon-512-maskable.png","icons/icon-512.png","index.html","manifest.webmanifest"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

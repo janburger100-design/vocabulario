@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut } from "firebase/auth";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, collection, onSnapshot, setDoc, deleteDoc, getDocFromServer, writeBatch, deleteField } from "firebase/firestore";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, collection, onSnapshot, setDoc, deleteDoc, getDocFromServer, getDocsFromServer, writeBatch, deleteField } from "firebase/firestore";
 import BASE from "./vocab.json";
 import SEED from "./seed.json";
 
@@ -121,19 +121,39 @@ function startCloud(user){
   maybeSeed();
 }
 
-// Einmalig: Lernstand aus der alten Claude-Version übernehmen, wenn das Konto noch leer ist.
+// Einmalig pro Konto und Gerät: lokal Gelerntes (oder den Stand aus der Claude-Version) ins Konto übernehmen.
+function localData(){
+  let raw=null; try{ raw=JSON.parse(localStorage.getItem(LS_KEY)||"null"); }catch(e){}
+  return raw || {custom:SEED.custom, prog:SEED.prog, meta:SEED.meta};
+}
+function newer(a,b){ return (a&&a.last||"") > (b&&b.last||""); }
 async function maybeSeed(){
+  const flag="vocabulario_merged_"+S.uid;
+  try{ if (localStorage.getItem(flag)) return; }catch(e){}
   try{
-    const snap=await getDocFromServer(metaRef());
-    if (snap.exists()) return;
-    const batch=writeBatch(S.fs);
-    const buckets={};
-    Object.keys(SEED.prog||{}).forEach(function(id){ const b=bucketOf(id); (buckets[b]=buckets[b]||{})[id]=SEED.prog[id]; });
+    const loc=localData();
+    const metaSnap=await getDocFromServer(metaRef());
+    const cloudProg={}, cloudCustom={};
+    if (metaSnap.exists()){
+      const ps=await getDocsFromServer(collection(S.fs,"users",S.uid,"prog"));
+      ps.forEach(function(d){ const w=(d.data()||{}).w||{}; Object.assign(cloudProg,w); });
+      const cs=await getDocsFromServer(collection(S.fs,"users",S.uid,"custom"));
+      cs.forEach(function(d){ cloudCustom[d.id]=d.data(); });
+    }
+    const batch=writeBatch(S.fs); const buckets={}; let n=0;
+    Object.keys(loc.prog||{}).forEach(function(id){
+      const lp=loc.prog[id], cp=cloudProg[id];
+      if (!cp || newer(lp,cp) || (lp.flag && !cp.flag && !newer(cp,lp))){ const b=bucketOf(id); (buckets[b]=buckets[b]||{})[id]=lp; n++; }
+    });
     Object.keys(buckets).forEach(function(b){ batch.set(progRef(b), {w:buckets[b]}, {merge:true}); });
-    Object.keys(SEED.custom||{}).forEach(function(id){ batch.set(customRef(id), SEED.custom[id]); });
-    batch.set(metaRef(), Object.assign({dir:"de_es",streak:0,lastDay:null}, SEED.meta||{}, {created:Date.now()}), {merge:true});
+    Object.keys(loc.custom||{}).forEach(function(id){ if (!cloudCustom[id]){ batch.set(customRef(id), loc.custom[id]); n++; } });
+    const lm=Object.assign({dir:"de_es",streak:0,lastDay:null}, loc.meta||{});
+    if (!metaSnap.exists()) batch.set(metaRef(), Object.assign(lm,{created:Date.now()}), {merge:true});
+    else { const cm=metaSnap.data()||{}; if ((lm.lastDay||"")>(cm.lastDay||"")) batch.set(metaRef(), {lastDay:lm.lastDay, streak:lm.streak}, {merge:true}); }
     await batch.commit();
-  }catch(e){ /* offline oder schon vorhanden: später erneut beim nächsten Start */ }
+    try{ localStorage.setItem(flag,"1"); }catch(e){}
+    if (n && metaSnap.exists()) toast("Lokaler Lernstand übernommen");
+  }catch(e){ console.warn(e); /* offline: beim nächsten Start erneut */ }
 }
 
 function startLocal(){
