@@ -159,7 +159,6 @@ async function maybeSeed(){
 function startLocal(){
   stopListeners();
   S.mode="local"; S.uid=null; S.email="";
-  try{ localStorage.setItem(LS_MODE,"local"); }catch(e){}
   loadLocal(); go("dash");
 }
 
@@ -639,7 +638,7 @@ app.addEventListener("click",function(e){
     case "undo": undo(); break;
     case "signup": { const f=loginFields(); if (!f.mail||f.pass.length<6){ S.authError="Bitte E-Mail und ein Passwort mit mindestens 6 Zeichen eingeben."; render(); } else doLogin("signup", f.mail, f.pass); } break;
     case "reset": doReset(loginFields().mail); break;
-    case "local": startLocal(); break;
+    case "local": try{ localStorage.setItem(LS_MODE,"local"); }catch(e){} startLocal(); break;
     case "to-login": try{ localStorage.removeItem("vocabulario_mode"); }catch(e){} S.mode="login"; S.authError=""; go("login"); break;
     case "logout": doLogout(); break;
     case "del-ask": askDelete(); break;
