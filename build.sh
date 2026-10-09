@@ -2,10 +2,10 @@
 # Baut die App und schreibt eine neue Cache-Version in sw.js
 set -e
 cd "$(dirname "$0")"
-npx esbuild src/app.js --bundle --format=esm --minify --target=safari15 --outfile=public/app.js
-VER=$(cat public/app.js public/app.css public/index.html public/config.js | sha1sum | cut -c1-10)
-FILES=$(cd public && find . -type f ! -name sw.js ! -name '.*' | sed 's|^\./||' | sort | awk '{printf "\"%s\",", $0}')
-cat > public/sw.js <<SW
+npx esbuild src/app.js --bundle --format=esm --minify --target=safari15 --outfile=docs/app.js
+VER=$(cat docs/app.js docs/app.css docs/index.html docs/config.js | sha1sum | cut -c1-10)
+FILES=$(cd docs && find . -type f ! -name sw.js ! -name '.*' | sed 's|^\./||' | sort | awk '{printf "\"%s\",", $0}')
+cat > docs/sw.js <<SW
 // Offline-Cache. Version wird bei jedem Build neu berechnet.
 const CACHE = "vocabulario-$VER";
 const FILES = ["./", ${FILES%,}];
